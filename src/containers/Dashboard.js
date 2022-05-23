@@ -132,23 +132,24 @@ export default class {
   }
 
   handleShowTickets(e, bills, index) {
-    if (window[`counter${index}`] === undefined) window[`counter${index}`] = 0
-    this.index = index
-    if (window[`counter${index}`] % 2 === 0) {
+    if (this.counter === undefined || this.index !== index) this.counter = 0
+    if (this.index === undefined || this.index !== index) this.index = index
+    if (this.counter % 2 === 0) {
       $(`#arrow-icon${this.index}`).css({ transform: 'rotate(0deg)'})
       $(`#status-bills-container${this.index}`)
         .html(cards(filteredBills(bills, getStatus(this.index))))
-      window[`counter${index}`] ++
+      this.counter ++
     } else {
       $(`#arrow-icon${this.index}`).css({ transform: 'rotate(90deg)'})
       $(`#status-bills-container${this.index}`)
         .html("")
-      window[`counter${index}`] ++
+      this.counter ++
     }
 
     bills.forEach(bill => {
       $(`#open-bill${bill.id}`).unbind('click').click((e) => this.handleEditTicket(e, bill, bills))
     })
+
 
     return bills
 
