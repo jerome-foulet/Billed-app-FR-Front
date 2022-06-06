@@ -2,15 +2,17 @@
  * @jest-environment jsdom
  */
 
-import {screen, waitFor} from "@testing-library/dom"
-import BillsUI from "../views/BillsUI.js"
-import { bills } from "../fixtures/bills.js"
-import { ROUTES_PATH} from "../constants/routes.js";
-import {localStorageMock} from "../__mocks__/localStorage.js";
-import userEvent from '@testing-library/user-event'
-
-import router from "../app/Router.js";
+import { screen, waitFor } from "@testing-library/dom";
+import userEvent from '@testing-library/user-event';
+import BillsUI from "../views/BillsUI.js";
 import Bills from "../containers/Bills.js";
+import { ROUTES, ROUTES_PATH} from "../constants/routes.js";
+import { localStorageMock } from "../__mocks__/localStorage.js";
+import mockStore from "../__mocks__/store";
+import { bills } from "../fixtures/bills.js";
+import router from "../app/Router.js";
+
+jest.mock("../app/store", () => mockStore)
 
 describe("Given I am connected as an employee", () => {
   describe("When I am on Bills Page", () => {
@@ -70,15 +72,128 @@ describe('Given I am connected as employee and I am on Bills page', () => {
         document, onNavigate, store, localStorage: window.localStorage
       })
       const handleClickIconEye = jest.fn(billsContainer.handleClickIconEye)
-      //const eye = document.querySelector('div[class="content-title"]')
-      //const eye = screen.getByTestId('icon-eye')
       const eye = screen.getAllByTestId('icon-eye')[0]
       eye.addEventListener('click', handleClickIconEye(eye))
       userEvent.click(eye)
       expect(handleClickIconEye).toHaveBeenCalled()
-
-      // const modale = screen.getByTestId('modaleFile')
-      // expect(modale).toBeTruthy()
+      const modale = document.querySelector('[role=dialog]')
+      expect(modale).toBeTruthy()
     })
   })
+})
+
+describe('Given I am connected as employee and I am on Bills page', () => {
+  describe('When I click on the button "Nouvelle note de frais"', () => {
+    test('Then i should be redirect to bill/new', async () => {
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      window.localStorage.setItem('user', JSON.stringify({
+        type: 'Employee'
+      }))
+      document.body.innerHTML = BillsUI({ data: bills })
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      }
+      const store = null
+      const billsContainer = new Bills({
+        document, onNavigate, store, localStorage: window.localStorage
+      })
+      const handleClickNewBill = jest.fn(billsContainer.handleClickNewBill)
+      const button = screen.getByTestId('btn-new-bill')
+      button.addEventListener('click', handleClickNewBill)
+      expect(location.hash).toBe(ROUTES_PATH['Bills'])
+      userEvent.click(button)
+      expect(handleClickNewBill).toHaveBeenCalled()
+      await waitFor(() => screen.getByTestId('form-new-bill'))
+      const form = screen.getByTestId('form-new-bill')
+      expect(form).toBeTruthy()
+      //expect(location.hash).toBe(ROUTES_PATH['NewBill'])
+    })
+  })
+})
+
+describe("Bills Unit Test Suites", () => {
+  it('getBills should return something', () => {
+    Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+    window.localStorage.setItem('user', JSON.stringify({
+      type: 'Employee'
+    }))
+    document.body.innerHTML = BillsUI({ data: bills })
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname })
+    }
+    const store = null
+    const billsContainer = new Bills({
+      document, onNavigate, store, localStorage: window.localStorage
+    })
+    expect(billsContainer.getBills).toBeDefined()
+  })
+})
+
+// test d'intégration GET
+describe("Given I am a user connected as an Employee", () => {
+
+  describe("When I navigate to Bills", () => {
+    test("fetches bills from mock API GET", async () => {
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      localStorage.setItem("user", JSON.stringify({ type: "Employee", email: "a@a" }));
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.innerHTML = ''
+      document.body.append(root)
+      router()
+      window.onNavigate(ROUTES_PATH.Bills)
+      await waitFor(() => screen.getByTestId('icon-window'))
+      const windowIcon = screen.getByTestId('icon-window')
+      expect(windowIcon.classList.contains('active-icon')).toBe(true)
+      await waitFor(() => screen.getByTestId('tbody'))
+      const tbody = screen.getByTestId('tbody')
+      expect(tbody).toBeDefined
+      const count = tbody.childElementCount
+      expect(count).toBe(4)
+    })
+  })
+  
+  describe("When an error occurs on API", () => {
+    
+    beforeEach(() => {
+      jest.spyOn(mockStore, "bills")
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      localStorage.setItem("user", JSON.stringify({ type: "Employee", email: "a@a" }));
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.innerHTML = ''
+      document.body.append(root)
+      router()
+    })
+
+    test("fetches bills from an API and fails with 404 message error", async () => {
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list : () =>  {
+            return Promise.reject(new Error("Erreur 404"))
+          }
+        }
+      })
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick);
+      const message = await screen.getByText(/Erreur 404/)
+      expect(message).toBeTruthy()
+    })
+
+    test("fetches messages from an API and fails with 500 message error", async () => {
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list : () =>  {
+            return Promise.reject(new Error("Erreur 500"))
+          }
+        }})
+
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick);
+      const message = await screen.getByText(/Erreur 500/)
+      expect(message).toBeTruthy()
+    })
+
+  })
+
 })
