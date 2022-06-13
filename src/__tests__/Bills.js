@@ -107,6 +107,7 @@ describe('Given I am connected as employee and I am on Bills page', () => {
       const form = screen.getByTestId('form-new-bill')
       expect(form).toBeTruthy()
       //expect(location.hash).toBe(ROUTES_PATH['NewBill'])
+      //expect(billsContainer.onNavigate(jest.fn())).toHaveBeenCalledWith(ROUTES_PATH['NewBill'])
     })
   })
 })
@@ -153,8 +154,7 @@ describe("Given I am a user connected as an Employee", () => {
     })
   })
   
-  describe("When an error occurs on API", () => {
-    
+  describe("When an error occurs on API", () => { 
     beforeEach(() => {
       jest.spyOn(mockStore, "bills")
       Object.defineProperty(window, 'localStorage', { value: localStorageMock })
