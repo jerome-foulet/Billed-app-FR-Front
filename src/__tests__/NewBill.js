@@ -141,7 +141,7 @@ describe("Given I am connected as an employee and I am on NewBill Page", () => {
           }
         })
       )
-      expect(handleChangeFile).toHaveBeenCalled();
+      expect(handleChangeFile).toHaveBeenCalled()
 
       const event = {
         preventDefault() {},
@@ -153,43 +153,43 @@ describe("Given I am connected as an employee and I am on NewBill Page", () => {
 
   // integration
   describe("When I fill all fields with good format and i submit", () => {
-    test("Then I should be redirect on Bills Page and I should see my new bill", async () => {
-      jest.spyOn(mockStore, "bills")
-      const files = [new File(["goodExtension"], "goodExtension.jpg", { type: "image/jpeg" })]
-      const container = new NewBill({ document, onNavigate, store: mockStore, localStorage })
+    test("Then It should have been called updateBill", async () => {
+      const container = new NewBill({ document, onNavigate, store: null, localStorage })
+      const validBill = {
+        type: "Transports",
+        name: "Test",
+        date: "2022-06-27",
+        amount: 98,
+        vat: 80,
+        pct: 20,
+        commentary: "Commentaire",
+        fileUrl: "https://localhost:3456/images/test.jpg",
+        fileName: "test.jpg",
+        status: "pending"
+      }
+
+      // Load the values in input
+      screen.getByTestId("expense-type").value = validBill.type
+      screen.getByTestId("expense-name").value = validBill.name
+      screen.getByTestId("datepicker").value = validBill.date
+      screen.getByTestId("amount").value = validBill.amount
+      screen.getByTestId("vat").value = validBill.vat
+      screen.getByTestId("pct").value = validBill.pct
+      screen.getByTestId("commentary").value = validBill.commentary
+
+      container.fileName = validBill.fileName
+      container.fileUrl = validBill.fileUrl
+
+      container.updateBill = jest.fn()
       const handleSubmit = jest.fn(container.handleSubmit)
-      const mock = jest.fn()
-        .mockReturnValueOnce("testId")
-        .mockReturnValueOnce("13/06/2022")
-        .mockReturnValueOnce(25)
-        .mockReturnValueOnce(20)
-      const buttonNewBill = document.getElementById("btn-send-bill")
-      const inputName = screen.getByTestId("expense-name").value = mock()
-      const inputDate = screen.getByTestId("datepicker").value = mock()
-      const inputAmount = screen.getByTestId("amount").value = mock()
-      const inputPCT = screen.getByTestId("pct").value = mock()
-      const inputFile = screen.getByTestId("file")
 
-      fireEvent(
-        inputFile,
-        createEvent("change", inputFile, {
-          target: {
-            files: files
-          }
-        })
-      )
+      const form = screen.getByTestId("form-new-bill")
+      form.addEventListener("submit", handleSubmit)
+      fireEvent.submit(form)
 
-      buttonNewBill.addEventListener("click", (e) => handleSubmit)
-      userEvent.click(buttonNewBill)
+      expect(handleSubmit).toHaveBeenCalled()
+      expect(container.updateBill).toHaveBeenCalled()
       expect(screen.getByText("Mes notes de frais")).toBeTruthy()
-
-      /*await waitFor(() => screen.getByText("encore"))
-      expect(screen.getByText("encore")).toBeTruthy() // ???
-      /*await waitFor(() => screen.getByTestId('tbody'))
-      const tbody = screen.getByTestId('tbody')
-      expect(tbody).toBeDefined
-      const count = tbody.childElementCount
-      expect(count).toBe(5)*/ // ???
     })
   })
 })
